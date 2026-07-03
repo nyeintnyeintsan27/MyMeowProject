@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 
-type TabType = 'Home' | 'Explore' | 'Hospital' | 'Message' | 'Profile';
+type TabType = 'Home' | 'Hospital' | 'Message' | 'Profile';
 
 interface BottomNavProps {
   activeTab?: TabType;
@@ -19,11 +19,10 @@ export default function BottomNav({ activeTab = 'Home' }: BottomNavProps) {
   const pathname = usePathname();
 
   const tabs = [
-    { name: 'Home', icon: '🏠', route: '/(tabs)' },
-    { name: 'Explore', icon: '🔍', route: '/(tabs)/explore' },
-    { name: 'Hospital', icon: '🏥', route: '/(tabs)/hospital' },
-    { name: 'Message', icon: '💬', route: '/(tabs)/message' },
-    { name: 'Profile', icon: '👤', route: '/(tabs)/profile' },
+    { name: 'Home', icon: '🏠', route: '/home' },
+    { name: 'Hospital', icon: '🏥', route: '/hospital' },
+    { name: 'Message', icon: '💬', route: '/message' },
+    { name: 'Profile', icon: '👤', route: '/profile' },
   ];
 
   const handleTabPress = (tab: typeof tabs[0]) => {
@@ -64,8 +63,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 2,
     borderTopColor: '#feebc5',
-    height: 65,
-    paddingBottom: 8,
+    height: 85,
+    paddingBottom: 16,
     paddingTop: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -84,7 +83,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   activeNavIcon: {
-    color: '#feebc5',
+    color: '#eba417',
   },
   navLabel: {
     fontSize: 12,
@@ -93,14 +92,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   activeNavLabel: {
-    color: '#feebc5',
+    color: '#dea32b',
   },
   activeIndicator: {
     position: 'absolute',
-    top: -8,
-    width: 20,
+    top: 38,
+    width: 36,
     height: 3,
-    backgroundColor: '#feebc5',
+    backgroundColor: '#dea32b',
     borderRadius: 2,
   },
 });
