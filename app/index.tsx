@@ -25,7 +25,7 @@ export default function WelcomeScreen() {
 
   const handleSkip = () => {
     Alert.alert('Skip', 'Continue as guest');
-    router.replace('/(tabs)');
+    router.replace('/');
   };
 
   const handleTabPress = (tabName: string) => {

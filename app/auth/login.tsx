@@ -35,7 +35,7 @@ export default function LoginScreen() {
     setTimeout(() => {
       setLoading(false);
       Alert.alert('Success', 'Logged in successfully!');
-      router.replace('/(tabs)');  // ✅ Home Page ကိုသွားမယ်
+      router.replace('/home');  // ✅ Home Page ကိုသွားမယ်
     }, 1500);
   };
 

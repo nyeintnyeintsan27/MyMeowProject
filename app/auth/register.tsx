@@ -38,7 +38,7 @@ export default function RegisterScreen() {
     setTimeout(() => {
       setLoading(false);
       Alert.alert('Success', 'Registered successfully!');
-      router.replace('/(tabs)');
+      router.replace('/home');
     }, 1500);
   };
 
