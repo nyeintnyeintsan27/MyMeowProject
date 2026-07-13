@@ -1,4 +1,4 @@
-// app/(auth)/login.tsx
+// app/auth/login.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -17,6 +17,8 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@/constants/config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,18 +27,47 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter email and password');
+      setError('Please enter email and password');
       return;
     }
+
     setLoading(true);
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+
+      await AsyncStorage.setItem('token', data.token);
+      await AsyncStorage.setItem('user', JSON.stringify(data.user));
+
+      if (data.user.role === 'admin') {
+        Alert.alert('Info', 'Admin users please use web dashboard');
+        router.replace('/home');
+      } else {
+        router.replace('/home');
+      }
+
+    } catch (error: any) {
+      setError(error.message || 'Login failed');
+    } finally {
       setLoading(false);
-      Alert.alert('Success', 'Logged in successfully!');
-      router.replace('/home');  // ✅ Home Page ကိုသွားမယ်
-    }, 1500);
+    }
   };
 
   const handleBack = () => {
@@ -56,12 +87,12 @@ export default function LoginScreen() {
   };
 
   const handleSignUp = () => {
-    router.push('/auth/register');  // ✅ ဒီလိုပြင်ပါ
+    router.push('/auth/register');
   };
 
   return (
     <ImageBackground
-      source={require('@/assets/images/cat2.jpg')}  // ✅ ဒီလိုပြင်ပါ
+      source={require('@/assets/images/cat2.jpg')}
       style={styles.background}
       resizeMode="cover"
     >
@@ -75,6 +106,7 @@ export default function LoginScreen() {
             contentContainerStyle={styles.scrollContainer}
             showsVerticalScrollIndicator={false}
           >
+            {/* Title Bar */}
             <View style={styles.titleBarContainer}>
               <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                 <Text style={styles.backText}>←</Text>
@@ -89,6 +121,13 @@ export default function LoginScreen() {
                 <Text style={styles.title}>Meow Pet Pulse</Text>
                 <Text style={styles.subtitle}>Login to your account</Text>
 
+                {/* Error Message */}
+                {error ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                  </View>
+                ) : null}
+
                 <View style={styles.formSection}>
                   <View style={styles.inputContainer}>
                     <TextInput
@@ -96,7 +135,10 @@ export default function LoginScreen() {
                       placeholder="Enter Your Email"
                       placeholderTextColor="#999"
                       value={email}
-                      onChangeText={setEmail}
+                      onChangeText={(text) => {
+                        setEmail(text);
+                        setError('');
+                      }}
                       autoCapitalize="none"
                       keyboardType="email-address"
                     />
@@ -108,7 +150,10 @@ export default function LoginScreen() {
                       placeholder="Enter Your Password"
                       placeholderTextColor="#999"
                       value={password}
-                      onChangeText={setPassword}
+                      onChangeText={(text) => {
+                        setPassword(text);
+                        setError('');
+                      }}
                       secureTextEntry
                     />
                   </View>
@@ -247,6 +292,18 @@ const styles = StyleSheet.create({
     color: '#7E8D96',
     marginBottom: 24,
     fontWeight: '400',
+  },
+  errorContainer: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 12,
+    width: '100%',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    textAlign: 'center',
   },
   formSection: {
     width: '100%',

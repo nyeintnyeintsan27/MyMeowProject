@@ -12,6 +12,10 @@
       "supportsTablet": true,
       "config": {
         "googleMapsApiKey": "AIzaSyCjQ1Oj7PjQXbHw4zB0gJfZ_2U5Z7qj9Y"
+      },
+      "bundleIdentifier": "com.nyeint.Myproject",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -27,7 +31,13 @@
         "googleMaps": {
           "apiKey": "AIzaSyCjQ1Oj7PjQXbHw4zB0gJfZ_2U5Z7qj9Y"
         }
-      }
+      },
+      "package": "com.nyeint.Myproject",
+
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "output": "static",
@@ -47,11 +57,27 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-localization",
+     
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9e837a01-d51c-42f2-ad66-4d3a926009f1"
+      }
     }
   }
 }

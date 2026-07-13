@@ -1,8 +1,9 @@
-import BottomNav from '@/components/common/BottomNav';
+// app/home.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dimensions,
   Image,
@@ -14,68 +15,187 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@/constants/config';
 
 const { width, height } = Dimensions.get('window');
-
-// ===== FIXED CARD SIZE =====
 const CARD_WIDTH = (width - 44) / 2;
-const CARD_HEIGHT = CARD_WIDTH * 1.2; // 20% taller than width
+
+interface PetType {
+  id: number;
+  name: string;
+}
+
+interface PetBreed {
+  id: number;
+  name: string;
+  origin: string;
+  avg_lifespan: number;
+  avg_weight: number;
+  description: string;
+  image_url: string;
+  pet_type_id: number;
+  pet_type_name: string;
+}
+
+interface PetBreedInfo {
+  id: number;
+  blood_types: string;
+  diet_type: string;
+  diet_description: string;
+  habitat: string;
+  lifespan_years: number;
+  weight_range: string;
+  gestation_period: string;
+  social_behavior: string;
+  pet_breed_id: number;
+}
 
 export default function HomeScreen() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState('All');
+  const [selectedPetType, setSelectedPetType] = useState<number | null>(null);
+  const [petTypes, setPetTypes] = useState<PetType[]>([]);
+  const [petBreeds, setPetBreeds] = useState<PetBreed[]>([]);
+  const [filteredBreeds, setFilteredBreeds] = useState<PetBreed[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // Detail Popup States
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedBreed, setSelectedBreed] = useState<PetBreed | null>(null);
+  const [breedInfo, setBreedInfo] = useState<PetBreedInfo | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // Categories
   const categories = [
-    { id: '1', title: 'Feeding', icon: '🍽️', color: 'rgba(255,229,180,0.85)' },
-    { id: '2', title: 'Training', icon: '🎯', color: 'rgba(180,229,255,0.85)' },
-    { id: '3', title: 'Health', icon: '🏥', color: 'rgba(255,180,180,0.85)' },
-    { id: '4', title: 'Grooming', icon: '✂️', color: 'rgba(180,255,180,0.85)' },
+    { id: '1', title: t('categories.feeding') || 'Feeding', icon: '🍽️', color: 'rgba(255,229,180,0.85)' },
+    { id: '2', title: t('categories.training') || 'Training', icon: '🎯', color: 'rgba(180,229,255,0.85)' },
+    { id: '3', title: t('categories.health') || 'Health', icon: '🏥', color: 'rgba(255,180,180,0.85)' },
+    { id: '4', title: t('categories.grooming') || 'Grooming', icon: '✂️', color: 'rgba(180,255,180,0.85)' },
   ];
 
-  const allPosts = [
-    { id: '1', title: 'Abyssinian', image: require('@/assets/images/abyssinian.jpg'), type: 'Cat' },
-    { id: '2', title: 'Bengal', image: require('@/assets/images/bengal.jpg'), type: 'Cat' },
-    { id: '3', title: 'American Shorthair', image: require('@/assets/images/american-shorthair.jpg'), type: 'Cat' },
-    { id: '4', title: 'Birman', image: require('@/assets/images/birman.jpg'), type: 'Cat' },
-    { id: '5', title: 'Bombay', image: require('@/assets/images/bombay.jpg'), type: 'Cat' },
-    { id: '6', title: 'British Shorthair', image: require('@/assets/images/british_shortair.jpg'), type: 'Cat' },
-    { id: '7', title: 'Burmese', image: require('@/assets/images/burmese.jpg'), type: 'Cat' },
-    { id: '8', title: 'Chartreux', image: require('@/assets/images/chartreux.jpg'), type: 'Cat' },
-    { id: '9', title: 'Cornish', image: require('@/assets/images/cornish.jpg'), type: 'Cat' },
-    { id: '10', title: 'Egyptian', image: require('@/assets/images/egyptian.jpg'), type: 'Cat' },
-    { id: '11', title: 'Devon Rex', image: require('@/assets/images/devonRex.jpg'), type: 'Cat' },
-    { id: '12', title: 'Bobtail', image: require('@/assets/images/bobtail.jpg'), type: 'Cat' },
-    { id: '13', title: 'Himalayan', image: require('@/assets/images/himalayan.jpg'), type: 'Cat' },
-    { id: '14', title: 'Korat', image: require('@/assets/images/korat.jpg'), type: 'Cat' },
+  // Language Switch
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === 'en' ? 'my' : 'en';
+    i18n.changeLanguage(nextLang);
+  };
 
-    
-    { id: '15', title: 'Afghan Hound', image: require('@/assets/images/afghan_hound.jpg'), type: 'Dog' },
-    { id: '16', title: 'Akita', image: require('@/assets/images/akita.jpg'), type: 'Dog' },
-    { id: '17', title: 'Alaskan Malamute', image: require('@/assets/images/alaskan_malamute.jpg'), type: 'Dog' },
-    { id: '18', title: 'Eskimo Dog', image: require('@/assets/images/eskimo.jpg'), type: 'Dog' },
-    { id: '19', title: 'American Bulldog', image: require('@/assets/images/bulldog.jpg'), type: 'Dog' },
-    { id: '20', title: 'Australian Cattle Dog', image: require('@/assets/images/australian_cattle.jpg'), type: 'Dog' },
-    { id: '21', title: 'American Staffordshire Terrier', image: require('@/assets/images/amstaff.jpg'), type: 'Dog' },
-    { id: '22', title: 'Australian Shepherd', image: require('@/assets/images/australian_shepherd.jpg'), type: 'Dog' },
-    { id: '23', title: 'Basenji', image: require('@/assets/images/basenji.jpg'), type: 'Dog' },
-    { id: '24', title: 'Beagle', image: require('@/assets/images/beagle.jpg'), type: 'Dog' },
-    { id: '25', title: 'Basset Hound', image: require('@/assets/images/basset_hound.jpg'), type: 'Dog' },
-    { id: '26', title: 'Bernese Mountain Dog', image: require('@/assets/images/bernese.jpg'), type: 'Dog' },
-    { id: '27', title: 'Belgian Malinois', image: require('@/assets/images/belgian.jpg'), type: 'Dog' },
-    { id: '28', title: 'Border Collie', image: require('@/assets/images/collie.jpg'), type: 'Dog' },
-    { id: '29', title: 'Bichon Frise', image: require('@/assets/images/bichon.jpg'), type: 'Dog' },
-    { id: '30', title: 'Boston Terrier', image: require('@/assets/images/boston.jpg'), type: 'Dog' },
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const filterOptions = ['All', 'Cat', 'Dog'];
-  
-  const filteredPosts = selectedFilter === 'All' 
-    ? allPosts 
-    : allPosts.filter(post => post.type === selectedFilter);
+  useEffect(() => {
+    filterBreeds();
+  }, [selectedPetType, petBreeds, search]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('token');
+
+      if (!token) {
+        Alert.alert('Error', 'Please login first');
+        router.replace('/auth/login');
+        return;
+      }
+
+      // 1. Fetch Pet Types (for filter)
+      const typesResponse = await fetch(`${API_URL}/pet-types`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const typesData = await typesResponse.json();
+      setPetTypes(typesData.data || []);
+
+      // 2. Fetch Pet Breeds (with images)
+      const breedsResponse = await fetch(`${API_URL}/pet-breeds`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const breedsData = await breedsResponse.json();
+      setPetBreeds(breedsData.data || []);
+
+    } catch (error: any) {
+      console.error('Error fetching data:', error);
+      Alert.alert('Error', error.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterBreeds = () => {
+    let filtered = petBreeds;
+
+    if (selectedPetType !== null) {
+      filtered = filtered.filter(breed => breed.pet_type_id === selectedPetType);
+    }
+
+    if (search.trim() !== '') {
+      filtered = filtered.filter(breed =>
+        breed.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    setFilteredBreeds(filtered);
+  };
+
+  // ===== Handle View Detail =====
+  const handleViewDetail = async (breed: PetBreed) => {
+    setSelectedBreed(breed);
+    setDetailModalVisible(true);
+    setDetailLoading(true);
+
+    try {
+      const token = await AsyncStorage.getItem('token');
+
+      // Fetch Pet Breed Info
+      const infoResponse = await fetch(`${API_URL}/pet-breed-info/breed/${breed.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const infoData = await infoResponse.json();
+
+      if (infoData.data && infoData.data.length > 0) {
+        setBreedInfo(infoData.data[0]);
+      } else {
+        setBreedInfo(null);
+      }
+    } catch (error) {
+      console.error('Error fetching breed info:', error);
+      setBreedInfo(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  // ===== Close Detail Popup =====
+  const closeDetailPopup = () => {
+    setDetailModalVisible(false);
+    setSelectedBreed(null);
+    setBreedInfo(null);
+  };
+
+  const handleCategoryPress = (title: string) => {
+    setSelectedPetType(null);
+    setModalVisible(false);
+  };
+
+  const getPetTypeName = (id: number) => {
+    const type = petTypes.find(t => t.id === id);
+    return type?.name || 'Unknown';
+  };
 
   return (
     <ImageBackground
@@ -94,18 +214,30 @@ export default function HomeScreen() {
             <View style={styles.header}>
               <View style={styles.headerTop}>
                 <View style={styles.headerLeft} />
-                <Text style={styles.pageTitle}>Home Page</Text>
-                <TouchableOpacity style={styles.notificationButton}>
-                  <Ionicons name="notifications-outline" size={26} color="#4A6572" />
-                  <View style={styles.notificationBadge} />
-                </TouchableOpacity>
+                <Text style={styles.pageTitle}>🐾 {t('home.title')}</Text>
+                <View style={styles.headerRight}>
+                  {/* Language Switch Button - Near Notification Bell */}
+                  <TouchableOpacity onPress={toggleLanguage} style={styles.langButton}>
+                    <Text style={styles.langButtonText}>
+                      {i18n.language === 'en' ? '🇲🇲' : '🇬🇧'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.notificationButton}>
+                    <Ionicons name="notifications-outline" size={26} color="#4A6572" />
+                    <View style={styles.notificationBadge} />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
 
             {/* ===== CATEGORIES ===== */}
             <View style={styles.categoriesContainer}>
               {categories.map((item) => (
-                <TouchableOpacity key={item.id} style={[styles.categoryItem, { backgroundColor: item.color }]}>
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.categoryItem, { backgroundColor: item.color }]}
+                  onPress={() => handleCategoryPress(item.title)}
+                >
                   <Text style={styles.categoryIcon}>{item.icon}</Text>
                   <Text style={styles.categoryTitle}>{item.title}</Text>
                 </TouchableOpacity>
@@ -116,12 +248,12 @@ export default function HomeScreen() {
             <View style={styles.searchContainer}>
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search ......"
+                placeholder={t('home.search')}
                 placeholderTextColor="#999"
                 value={search}
                 onChangeText={setSearch}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.filterIcon}
                 onPress={() => setModalVisible(true)}
               >
@@ -132,72 +264,123 @@ export default function HomeScreen() {
             {/* ===== FILTER LABEL ===== */}
             <View style={styles.filterLabelContainer}>
               <Text style={styles.filterLabelText}>
-                Filter: <Text style={styles.filterLabelValue}>{selectedFilter}</Text>
+                {t('home.filter')}: <Text style={styles.filterLabelValue}>
+                  {selectedPetType !== null
+                    ? getPetTypeName(selectedPetType)
+                    : t('common.allTypes')}
+                </Text>
               </Text>
             </View>
 
-            <Text style={styles.CategoryListText}>Animal Category List</Text>
+            <Text style={styles.CategoryListText}>{t('home.title')}</Text>
 
-            {/* ===== CAT POSTS (Fixed Size) ===== */}
-            <View style={styles.postsGrid}>
-              {filteredPosts.map((item) => (
-                <View key={item.id} style={[styles.postCard, { width: CARD_WIDTH }]}>
-                  <View style={[styles.imageWrapper, { width: CARD_WIDTH - 24, height: CARD_WIDTH - 24 }]}>
-                    <Image 
-                      source={item.image}
-                      style={styles.postImage}
-                      resizeMode="cover"
-                    />
+            {/* ===== LOADING ===== */}
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#9FDCFF" />
+                <Text style={styles.loadingText}>{t('common.loading')}</Text>
+              </View>
+            ) : filteredBreeds.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>{t('common.noData')}</Text>
+              </View>
+            ) : (
+              /* ===== PET BREEDS GRID ===== */
+              <View style={styles.postsGrid}>
+                {filteredBreeds.map((item) => (
+                  <View key={item.id} style={[styles.postCard, { width: CARD_WIDTH }]}>
+                    <View style={[styles.imageWrapper, { width: CARD_WIDTH - 24, height: CARD_WIDTH - 24 }]}>
+                      {item.image_url ? (
+                        <Image
+                          source={{ uri: item.image_url }}
+                          style={styles.postImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.placeholderImage}>
+                          <Text style={styles.placeholderText}>🐾</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.postTitle} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.postSubtitle}>{item.pet_type_name || 'Unknown'}</Text>
+                    {item.origin && (
+                      <Text style={styles.postOrigin}>📍 {item.origin}</Text>
+                    )}
+                    <TouchableOpacity
+                      style={styles.viewMoreButton}
+                      onPress={() => handleViewDetail(item)}
+                    >
+                      <Text style={styles.viewMoreText}>{t('home.viewMore')}</Text>
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.postTitle} numberOfLines={2}>{item.title}</Text>
-                  <TouchableOpacity style={styles.viewMoreButton}>
-                    <Text style={styles.viewMoreText}>View More</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            )}
 
             <View style={styles.bottomSpacer} />
           </ScrollView>
 
-          {/* ===== FILTER MODAL ===== */}
+          {/* ===== FILTER MODAL (Pet Types) ===== */}
           <Modal
             animationType="slide"
             transparent={true}
             visible={modalVisible}
             onRequestClose={() => setModalVisible(false)}
           >
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modalOverlay}
               activeOpacity={1}
               onPress={() => setModalVisible(false)}
             >
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Filter Animals</Text>
+                  <Text style={styles.modalTitle}>{t('home.selectPetType')}</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)}>
                     <Ionicons name="close" size={24} color="#4A6572" />
                   </TouchableOpacity>
                 </View>
-                {filterOptions.map((option) => (
+
+                <TouchableOpacity
+                  style={[
+                    styles.filterOption,
+                    selectedPetType === null && styles.filterOptionActive
+                  ]}
+                  onPress={() => {
+                    setSelectedPetType(null);
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.filterOptionText,
+                    selectedPetType === null && styles.filterOptionTextActive
+                  ]}>
+                    {t('common.allTypes')}
+                  </Text>
+                  {selectedPetType === null && (
+                    <Ionicons name="checkmark" size={20} color="#feebc5" />
+                  )}
+                </TouchableOpacity>
+
+                {petTypes.map((type) => (
                   <TouchableOpacity
-                    key={option}
+                    key={type.id}
                     style={[
                       styles.filterOption,
-                      selectedFilter === option && styles.filterOptionActive
+                      selectedPetType === type.id && styles.filterOptionActive
                     ]}
                     onPress={() => {
-                      setSelectedFilter(option);
+                      setSelectedPetType(type.id);
                       setModalVisible(false);
                     }}
                   >
                     <Text style={[
                       styles.filterOptionText,
-                      selectedFilter === option && styles.filterOptionTextActive
+                      selectedPetType === type.id && styles.filterOptionTextActive
                     ]}>
-                      {option}
+                      {type.name}
                     </Text>
-                    {selectedFilter === option && (
+                    {selectedPetType === type.id && (
                       <Ionicons name="checkmark" size={20} color="#feebc5" />
                     )}
                   </TouchableOpacity>
@@ -206,8 +389,153 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </Modal>
 
-          {/* ===== BOTTOM NAVIGATION ===== */}
-          <BottomNav activeTab="Home" />
+          {/* ===== DETAIL POPUP MODAL ===== */}
+          <Modal
+            animationType="fade"
+            transparent={true}
+            visible={detailModalVisible}
+            onRequestClose={closeDetailPopup}
+          >
+            <View style={styles.detailOverlay}>
+              <View style={styles.detailContainer}>
+                {/* Close Button */}
+                <TouchableOpacity style={styles.detailCloseButton} onPress={closeDetailPopup}>
+                  <Ionicons name="close" size={28} color="#4A6572" />
+                </TouchableOpacity>
+
+                {detailLoading ? (
+                  <View style={styles.detailLoadingContainer}>
+                    <ActivityIndicator size="large" color="#9FDCFF" />
+                    <Text style={styles.detailLoadingText}>{t('common.loading')}</Text>
+                  </View>
+                ) : selectedBreed ? (
+                  <ScrollView
+                    style={styles.detailScroll}
+                    contentContainerStyle={styles.detailScrollContent}
+                    showsVerticalScrollIndicator={true}
+                    persistentScrollbar={true}
+                    bounces={true}
+                    alwaysBounceVertical={false}
+                    decelerationRate="normal"
+                    scrollEventThrottle={16}
+                    nestedScrollEnabled={true}
+                    keyboardShouldPersistTaps="handled"
+                    scrollIndicatorInsets={{ right: 4 }}
+                  >
+                    {/* Image */}
+                    <View style={styles.detailImageContainer}>
+                      {selectedBreed.image_url ? (
+                        <Image
+                          source={{ uri: selectedBreed.image_url }}
+                          style={styles.detailImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.detailPlaceholderImage}>
+                          <Text style={styles.detailPlaceholderText}>🐾</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Breed Name */}
+                    <Text style={styles.detailName}>{selectedBreed.name}</Text>
+                    <Text style={styles.detailPetType}>
+                      {selectedBreed.pet_type_name || 'Unknown'}
+                    </Text>
+
+                    {/* Stats */}
+                    <View style={styles.detailStatsRow}>
+                      {selectedBreed.origin && (
+                        <View style={styles.detailStatItem}>
+                          <Text style={styles.detailStatValue}>📍</Text>
+                          <Text style={styles.detailStatLabel}>{selectedBreed.origin}</Text>
+                        </View>
+                      )}
+                      {selectedBreed.avg_lifespan ? (
+                        <View style={styles.detailStatItem}>
+                          <Text style={styles.detailStatValue}>{selectedBreed.avg_lifespan}</Text>
+                          <Text style={styles.detailStatLabel}>{t('home.years')}</Text>
+                        </View>
+                      ) : null}
+                      {selectedBreed.avg_weight ? (
+                        <View style={styles.detailStatItem}>
+                          <Text style={styles.detailStatValue}>{selectedBreed.avg_weight}</Text>
+                          <Text style={styles.detailStatLabel}>kg</Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    {/* Description */}
+                    {selectedBreed.description && (
+                      <View style={styles.detailSection}>
+                        <Text style={styles.detailSectionTitle}>{t('home.description')}</Text>
+                        <Text style={styles.detailSectionText}>{selectedBreed.description}</Text>
+                      </View>
+                    )}
+
+                    {/* Breed Info */}
+                    {breedInfo && (
+                      <View style={styles.detailInfoContainer}>
+                        <Text style={styles.detailInfoTitle}>{t('home.additionalInfo')}</Text>
+
+                        {breedInfo.blood_types && (
+                          <View style={styles.detailInfoRow}>
+                            <Text style={styles.detailInfoLabel}>{t('home.bloodTypes')}:</Text>
+                            <Text style={styles.detailInfoValue}>{breedInfo.blood_types}</Text>
+                          </View>
+                        )}
+
+                        {breedInfo.diet_type && (
+                          <View style={styles.detailInfoRow}>
+                            <Text style={styles.detailInfoLabel}>{t('home.diet')}:</Text>
+                            <Text style={styles.detailInfoValue}>{breedInfo.diet_type}</Text>
+                          </View>
+                        )}
+
+                        {breedInfo.diet_description && (
+                          <View style={styles.detailInfoRow}>
+                            <Text style={styles.detailInfoLabel}>{t('home.dietDetails')}:</Text>
+                            <Text style={styles.detailInfoValue}>{breedInfo.diet_description}</Text>
+                          </View>
+                        )}
+
+                        {breedInfo.habitat && (
+                          <View style={styles.detailInfoRow}>
+                            <Text style={styles.detailInfoLabel}>{t('home.habitat')}:</Text>
+                            <Text style={styles.detailInfoValue}>{breedInfo.habitat}</Text>
+                          </View>
+                        )}
+
+                        {breedInfo.weight_range && (
+                          <View style={styles.detailInfoRow}>
+                            <Text style={styles.detailInfoLabel}>{t('home.weightRange')}:</Text>
+                            <Text style={styles.detailInfoValue}>{breedInfo.weight_range}</Text>
+                          </View>
+                        )}
+
+                        {breedInfo.gestation_period && (
+                          <View style={styles.detailInfoRow}>
+                            <Text style={styles.detailInfoLabel}>{t('home.gestation')}:</Text>
+                            <Text style={styles.detailInfoValue}>{breedInfo.gestation_period}</Text>
+                          </View>
+                        )}
+
+                        {breedInfo.social_behavior && (
+                          <View style={styles.detailInfoRow}>
+                            <Text style={styles.detailInfoLabel}>{t('home.socialBehavior')}:</Text>
+                            <Text style={styles.detailInfoValue}>{breedInfo.social_behavior}</Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    {/* Bottom Spacer */}
+                    <View style={styles.detailBottomSpacer} />
+                  </ScrollView>
+                ) : null}
+              </View>
+            </View>
+          </Modal>
         </View>
       </SafeAreaView>
     </ImageBackground>
@@ -233,7 +561,6 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 20,
   },
-  // ===== HEADER =====
   header: {
     backgroundColor: '#9FDCFF',
     borderRadius: 0,
@@ -256,12 +583,23 @@ const styles = StyleSheet.create({
   headerLeft: {
     width: 40,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   pageTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#4A6572',
     textAlign: 'center',
     flex: 1,
+  },
+  langButton: {
+    padding: 4,
+  },
+  langButtonText: {
+    fontSize: 22,
   },
   notificationButton: {
     position: 'relative',
@@ -278,7 +616,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#fff',
   },
-  // ===== CATEGORIES =====
   categoriesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -317,7 +654,6 @@ const styles = StyleSheet.create({
     color: '#4A6572',
     textAlign: 'center',
   },
-  // ===== SEARCH BAR + FILTER =====
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -341,7 +677,6 @@ const styles = StyleSheet.create({
     borderLeftColor: '#e0e0e0',
     paddingLeft: 12,
   },
-  // ===== FILTER LABEL =====
   filterLabelContainer: {
     paddingHorizontal: 16,
     marginBottom: 12,
@@ -363,7 +698,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     fontWeight: 'bold',
   },
-  // ===== CAT POSTS (Fixed Size) =====
   postsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -391,13 +725,34 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+  },
+  placeholderText: {
+    fontSize: 40,
+  },
   postTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: 'bold',
     color: '#4A6572',
-    marginBottom: 8,
     textAlign: 'center',
-    minHeight: 36,
+    marginBottom: 2,
+  },
+  postSubtitle: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  postOrigin: {
+    fontSize: 11,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 6,
   },
   viewMoreButton: {
     backgroundColor: '#9FDCFF',
@@ -417,7 +772,22 @@ const styles = StyleSheet.create({
   bottomSpacer: {
     height: 10,
   },
-  // ===== MODAL (Dropdown) =====
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 16,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -472,4 +842,170 @@ const styles = StyleSheet.create({
     color: '#4A6572',
     fontWeight: 'bold',
   },
+
+  // ===== DETAIL POPUP STYLES =====
+  // ===== DETAIL POPUP STYLES =====
+detailOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.6)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 16,
+},
+detailContainer: {
+  backgroundColor: '#d0f4c7',
+  borderRadius: 24,
+  borderColor: '#9FDCFF',
+  borderWidth: 2,
+  width: '100%',
+  maxWidth: 420,
+  height: height * 0.82,
+  paddingTop: 20,
+  paddingHorizontal: 16,
+  paddingBottom: 10,
+  shadowColor: '#000',
+  shadowOffset: {
+    width: 0,
+    height: 4,
+  },
+  shadowOpacity: 0.3,
+  shadowRadius: 12,
+  elevation: 10,
+  position: 'relative',
+},
+detailScroll: {
+  flex: 1,
+  marginRight: -4,
+},
+detailScrollContent: {
+  paddingBottom: 40,
+  paddingRight: 8,
+},
+detailBottomSpacer: {
+  height: 20,
+},
+detailCloseButton: {
+  position: 'absolute',
+  top: 10,
+  right: 10,
+  zIndex: 10,
+  backgroundColor: 'rgba(255,255,255,0.95)',
+  borderRadius: 20,
+  padding: 6,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
+},
+detailLoadingContainer: {
+  padding: 40,
+  alignItems: 'center',
+},
+detailLoadingText: {
+  marginTop: 10,
+  color: '#666',
+},
+detailImageContainer: {
+  width: '100%',
+  height: 200,
+  borderRadius: 16,
+  overflow: 'hidden',
+  backgroundColor: '#f0f0f0',
+  marginBottom: 12,
+},
+detailImage: {
+  width: '100%',
+  height: '100%',
+},
+detailPlaceholderImage: {
+  width: '100%',
+  height: '100%',
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: '#e8e8e8',
+},
+detailPlaceholderText: {
+  fontSize: 60,
+},
+detailName: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#1a1a2e',
+  textAlign: 'center',
+},
+detailPetType: {
+  fontSize: 12,
+  color: '#666',
+  textAlign: 'center',
+  marginBottom: 10,
+},
+detailStatsRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  backgroundColor: '#f5f5f5',
+  borderRadius: 12,
+  padding: 12,
+  marginVertical: 8,
+},
+detailStatItem: {
+  alignItems: 'center',
+},
+detailStatValue: {
+  fontSize: 15,
+  fontWeight: 'bold',
+  color: '#4A6572',
+},
+detailStatLabel: {
+  fontSize: 10,
+  color: '#888',
+  marginTop: 2,
+},
+detailSection: {
+  marginTop: 12,
+},
+detailSectionTitle: {
+  fontSize: 13,
+  fontWeight: 'bold',
+  color: '#1a1a2e',
+  marginBottom: 4,
+},
+detailSectionText: {
+  fontSize: 12,
+  color: '#333',
+  lineHeight: 26,
+  textAlign: 'justify',
+},
+detailInfoContainer: {
+  marginTop: 12,
+  backgroundColor: '#f8f9fa',
+  borderRadius: 12,
+  padding: 14,
+  marginBottom: 8,
+},
+detailInfoTitle: {
+  fontSize: 13,
+  fontWeight: 'bold',
+  color: '#1a1a2e',
+  marginBottom: 8,
+},
+detailInfoRow: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  marginBottom: 4,
+},
+detailInfoLabel: {
+  width: 110,
+  fontSize: 12,
+  fontWeight: '700',
+  color: '#555',
+},
+detailInfoValue: {
+  flex: 1,
+  fontSize: 12,
+  color: '#333',
+  lineHeight: 22,
+},
 });
+
+

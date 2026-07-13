@@ -1,0 +1,34 @@
+{
+  "home": {
+    "title": "Pet Breeds",
+    "search": "Search pet breeds...",
+    "filter": "Filter",
+    "viewMore": "View More",
+    "description": "Description",
+    "additionalInfo": "Additional Information",
+    "years": "Years",
+    "selectPetType": "Select Pet Type",
+    "bloodTypes": "Blood Types",
+    "diet": "Diet",
+    "dietDetails": "Diet Details",
+    "habitat": "Habitat",
+    "weightRange": "Weight Range",
+    "gestation": "Gestation",
+    "socialBehavior": "Social Behavior",
+    "origin": "Origin",
+    "lifespan": "Lifespan",
+    "weight": "Weight",
+    "additionalInformation": "Additional Information"
+  },
+  "categories": {
+    "feeding": "Feeding",
+    "training": "Training",
+    "health": "Health",
+    "grooming": "Grooming"
+  },
+  "common": {
+    "loading": "Loading...",
+    "noData": "No pet breeds found",
+    "allTypes": "All Pet Types"
+  }
+}
