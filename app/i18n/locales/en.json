@@ -1,24 +1,28 @@
 {
+  "cat": "Cat",
+  "dog": "Dog",
+  "bird": "Bird",
+  "rabbit": "Rabbit",
+  "cat_description": "Domestic cats are small carnivorous mammals.",
+  "dog_description": "Domestic dogs are loyal companions.",
+  "bird_description": "Birds are feathered, winged animals.",
+  "rabbit_description": "Rabbits are small mammals with long ears.",
   "home": {
-    "title": "Pet Breeds",
-    "search": "Search pet breeds...",
+    "title": "Animal Category List",
+    "search": "Search ......",
     "filter": "Filter",
     "viewMore": "View More",
+    "years": "years",
     "description": "Description",
     "additionalInfo": "Additional Information",
-    "years": "Years",
-    "selectPetType": "Select Pet Type",
     "bloodTypes": "Blood Types",
     "diet": "Diet",
     "dietDetails": "Diet Details",
     "habitat": "Habitat",
     "weightRange": "Weight Range",
-    "gestation": "Gestation",
+    "gestation": "Gestation Period",
     "socialBehavior": "Social Behavior",
-    "origin": "Origin",
-    "lifespan": "Lifespan",
-    "weight": "Weight",
-    "additionalInformation": "Additional Information"
+    "selectPetType": "Select Pet Type"
   },
   "categories": {
     "feeding": "Feeding",
@@ -27,8 +31,8 @@
     "grooming": "Grooming"
   },
   "common": {
+    "allTypes": "All Types",
     "loading": "Loading...",
-    "noData": "No pet breeds found",
-    "allTypes": "All Pet Types"
+    "noData": "No data available"
   }
 }
